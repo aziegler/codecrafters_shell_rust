@@ -63,7 +63,11 @@ fn main() -> Result<(),ReadlineError>{
                                 return Err(ReadlineError::Interrupted);
                             };
                             let contents = read_to_string(file_name)?;
-                            history = contents.lines().map(|s| s.to_owned()).collect();
+                            contents.lines().for_each(|l| {
+                                if !l.is_empty(){
+                                    history.push(l.to_string());
+                                }
+                            });
                             continue;
                         }else if let Ok(arg) = first_arg.parse::<usize>() {
                             length = arg;
