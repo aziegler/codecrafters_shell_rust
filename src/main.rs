@@ -6,7 +6,7 @@ pub mod helper;
 use std::io::{self, Write};
 use std::{env, process::Command, str::FromStr};
 
-use rustyline::{Editor, error::ReadlineError, history::FileHistory};
+use rustyline::{Editor, config::Configurer, error::ReadlineError, history::FileHistory};
 
 use crate::{fs::PathCollection, helper::AutoComplHelper, history::HistoryContainer};
 
@@ -49,6 +49,7 @@ impl FromStr for ShellCommand {
 fn main() -> Result<(), ReadlineError> {
     let mut rl: Editor<AutoComplHelper, FileHistory> = Editor::new()?;
     rl.set_helper(AutoComplHelper::default());
+    rl.set_completion_type(rustyline::CompletionType::List);
     let mut history = HistoryContainer::new();
     if let Ok(hist_file) =  env::var("HISTFILE"){
         history.read_file(hist_file.as_str(), rl.history_mut())?;
