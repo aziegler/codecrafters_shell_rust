@@ -1,13 +1,14 @@
 pub mod fs;
 pub mod history;
+pub mod helper;
 
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::{env, process::Command, str::FromStr};
 
-use rustyline::{DefaultEditor, error::ReadlineError};
+use rustyline::{Editor, error::ReadlineError, history::FileHistory};
 
-use crate::{fs::PathCollection, history::HistoryContainer};
+use crate::{fs::PathCollection, helper::AutoComplHelper, history::HistoryContainer};
 
 enum ShellCommand {
     Echo,
@@ -31,7 +32,8 @@ impl FromStr for ShellCommand {
 }
 
 fn main() -> Result<(), ReadlineError> {
-    let mut rl = DefaultEditor::new()?;
+    let mut rl: Editor<AutoComplHelper, FileHistory> = Editor::new()?;
+    rl.set_helper(AutoComplHelper::default());
     let mut history = HistoryContainer::new();
     if let Ok(hist_file) =  env::var("HISTFILE"){
         history.read_file(hist_file.as_str(), rl.history_mut())?;
