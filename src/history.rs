@@ -3,31 +3,32 @@ use std::{
     io::Write,
 };
 
-use rustyline::error::ReadlineError;
+use rustyline::{error::ReadlineError, history::{FileHistory, History}};
 
-pub struct History {
+pub struct HistoryContainer {
     content: Vec<String>,
-    mem_content: Vec<String>,
+    mem_content: Vec<String>
 }
 
-impl History {
+impl  HistoryContainer  {
     pub fn new() -> Self {
-        History {
+        HistoryContainer {
             content: Vec::new(),
-            mem_content: Vec::new(),
+            mem_content: Vec::new(),           
         }
     }
 
-    pub fn add(&mut self, cmd: String) {
+    pub fn add(&mut self, hist: &mut FileHistory, cmd: String) {
         self.content.push(cmd.clone());
-        self.mem_content.push(cmd);
+        self.mem_content.push(cmd.clone());
+        hist.add(&cmd);
     }
 
-    pub fn read_file(&mut self, path: &str) -> Result<(), ReadlineError> {
+    pub fn read_file(&mut self, path: &str, hist: &mut FileHistory) -> Result<(), ReadlineError> {
         let contents = read_to_string(path)?;
         contents.lines().for_each(|l| {
             if !l.is_empty() {
-                self.content.push(l.to_string());
+                self.add(hist,l.to_string());
             }
         });
         Ok(())
@@ -63,7 +64,7 @@ impl History {
             });
     }
 
-    pub fn run(&mut self, args: Vec<&str>) -> Result<(), ReadlineError> {
+    pub fn run(&mut self, args: Vec<&str>,  hist: &mut FileHistory) -> Result<(), ReadlineError> {
         let mut length: usize = self.content.len();
         if let Some(first_arg) = args.first() {
             match *first_arg {
@@ -71,7 +72,7 @@ impl History {
                     let Some(file_name) = args.get(1) else {
                         return Err(ReadlineError::Interrupted);
                     };
-                    self.read_file(file_name)?;
+                    self.read_file(file_name, hist)?;
                     return Ok(());
                 }
                 "-w" => {
@@ -100,8 +101,3 @@ impl History {
     }
 }
 
-impl Default for History {
-    fn default() -> Self {
-        Self::new()
-    }
-}

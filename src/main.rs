@@ -7,7 +7,7 @@ use std::{process::Command, str::FromStr};
 
 use rustyline::{DefaultEditor, error::ReadlineError};
 
-use crate::{fs::PathCollection, history::History};
+use crate::{fs::PathCollection, history::HistoryContainer};
 
 enum ShellCommand {
     Echo,
@@ -31,8 +31,9 @@ impl FromStr for ShellCommand {
 }
 
 fn main() -> Result<(), ReadlineError> {
-    let mut history = History::default();
     let mut rl = DefaultEditor::new()?;
+    let mut history = HistoryContainer::new();
+    
     loop {
         let cmd_line = rl.readline("$ ")?;
 
@@ -40,8 +41,7 @@ fn main() -> Result<(), ReadlineError> {
         let (Some(cmd), args) = (args.next(), args.collect::<Vec<&str>>()) else {
             panic!("WTF!")
         };
-        history.add(cmd_line.clone());
-        rl.add_history_entry(cmd_line.clone())?;
+        history.add(rl.history_mut(), cmd_line.clone());
         if let Ok(c) = cmd.parse::<ShellCommand>() {
             match c {
                 ShellCommand::Echo => println!("{}", args.join(" ")),
@@ -60,7 +60,7 @@ fn main() -> Result<(), ReadlineError> {
                     }
                 }
                 ShellCommand::History => {
-                    history.run(args)?;
+                    history.run(args, rl.history_mut())?;
                 }
             }
         } else {
