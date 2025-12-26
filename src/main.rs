@@ -53,8 +53,8 @@ fn main() {
             }
         }else{
             let path = PathCollection::build().unwrap();
-            if let Some(full_path)= path.find(cmd.to_string()){
-                let mut output = Command::new(full_path).arg(args.join(" ")).spawn().expect("False");
+            if path.find(cmd.to_string()).is_some(){
+                let mut output = Command::new(cmd).arg(args.join(" ")).spawn().expect("False");
                 let _ = output.wait();
              
             }else{
