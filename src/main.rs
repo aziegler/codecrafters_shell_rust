@@ -98,6 +98,14 @@ fn main() -> Result<(), ReadlineError> {
                 }
                 ShellCommand::CD=>{
                     let arg = args.first().unwrap();
+                    if *arg =="~"{
+                        let Ok(home) = env::var("HOME")else {
+                            println!("HOME should be set");
+                            continue;
+                        };
+                        env::set_current_dir(home)?;
+                        continue;
+                    }
                     let change = env::set_current_dir(arg);
                     match change{
                         Ok(_) => (),
