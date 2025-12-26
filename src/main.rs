@@ -2,20 +2,20 @@ pub mod fs;
 
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::str::FromStr;
+use std::{process::Command, str::FromStr};
 
 use crate::fs::PathCollection;
 
-enum Command{Echo,Exit,Type}
+enum ShellCommand{Echo,Exit,Type}
 
-impl FromStr for Command {
+impl FromStr for ShellCommand {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "exit" => Ok(Command::Exit),
-            "echo" => Ok(Command::Echo),
-            "type" => Ok(Command::Type),
+            "exit" => Ok(ShellCommand::Exit),
+            "echo" => Ok(ShellCommand::Echo),
+            "type" => Ok(ShellCommand::Type),
             _ => Err("Not Found"),
         }
     }
@@ -33,13 +33,13 @@ fn main() {
         let (Some(cmd),args) = (args.next(),args.collect::<Vec<&str>>())else{
             panic!("WTF!")
         };
-        if let Ok(c) = cmd.parse::<Command>(){
+        if let Ok(c) = cmd.parse::<ShellCommand>(){
             match c {
-                Command::Echo => println!("{}",args.join(" ")),
-                Command::Exit => return,
-                Command::Type => {
+                ShellCommand::Echo => println!("{}",args.join(" ")),
+                ShellCommand::Exit => return,
+                ShellCommand::Type => {
                     let arg = args.first().unwrap();
-                    if arg.to_owned().parse::<Command>().is_ok(){
+                    if arg.to_owned().parse::<ShellCommand>().is_ok(){
                         println!("{arg} is a shell builtin");
                     }else{
                         let path = PathCollection::build().unwrap();
@@ -52,7 +52,12 @@ fn main() {
                 },
             }
         }else{
-            println!("{cmd}: command not found")
+            let path = PathCollection::build().unwrap();
+            if let Some(full_path)= path.find(cmd.to_string()){
+                let _ = Command::new(full_path).arg(args.join(" ")).spawn();
+            }else{
+                println!("{cmd}: command not found")
+            }
         };
         
     }
