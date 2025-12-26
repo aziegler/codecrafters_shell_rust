@@ -4,6 +4,8 @@ pub mod fs;
 use std::io::{self, Write};
 use std::{process::Command, str::FromStr};
 
+use rustyline::{DefaultEditor, error::ReadlineError};
+
 use crate::fs::PathCollection;
 
 enum ShellCommand{Echo,Exit,Type,History}
@@ -22,24 +24,22 @@ impl FromStr for ShellCommand {
     }
 }
 
-fn main() {
+fn main() -> Result<(),ReadlineError>{
     let mut history : Vec<String> = Vec::new();
-    loop {
-        print!("$ ");
-        io::stdout().flush().unwrap();
 
-        let mut buff = String::new();
-        let _ = io::stdin().read_line(&mut buff);
-        let cmd_line = buff.trim();
+    let mut rl = DefaultEditor::new()?;
+    loop {
+        let cmd_line = rl.readline("$ ")?;
+        
         let mut args = cmd_line.split_whitespace();
         let (Some(cmd),args) = (args.next(),args.collect::<Vec<&str>>())else{
             panic!("WTF!")
         };
-        history.push(buff.clone());
+        history.push(cmd_line.clone());
         if let Ok(c) = cmd.parse::<ShellCommand>(){
             match c {
                 ShellCommand::Echo => println!("{}",args.join(" ")),
-                ShellCommand::Exit => return,
+                ShellCommand::Exit => return Ok(()),
                 ShellCommand::Type => {
                     let arg = args.first().unwrap();
                     if arg.to_owned().parse::<ShellCommand>().is_ok(){
@@ -59,11 +59,10 @@ fn main() {
                         length = arg;
                     }else{
                         length = history.len();
-                    }
-                    
+                    }                    
                     history.iter().enumerate().rev().take(length).rev().for_each(|(idx,command)| {
                             let loc = idx + 1;
-                            print!("    {loc} {command}");
+                            println!("    {loc} {command}");
                     });
                     
                 },
