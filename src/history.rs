@@ -43,7 +43,7 @@ impl  HistoryContainer  {
         Ok(())
     }
 
-    fn write_file(&self, file_name: &str) -> Result<(), ReadlineError> {
+    pub fn write_file(&self, file_name: &str) -> Result<(), ReadlineError> {
         let mut file = File::create(file_name)?;
         self.content.iter().for_each(|l| {
             let _ = writeln!(file, "{}", l);
@@ -98,6 +98,12 @@ impl  HistoryContainer  {
         }
         self.display(length);
         Ok(())
+    }
+}
+
+impl Default for HistoryContainer {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

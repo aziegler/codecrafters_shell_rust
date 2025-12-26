@@ -3,7 +3,7 @@ pub mod history;
 
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{process::Command, str::FromStr};
+use std::{env, process::Command, str::FromStr};
 
 use rustyline::{DefaultEditor, error::ReadlineError};
 
@@ -33,7 +33,10 @@ impl FromStr for ShellCommand {
 fn main() -> Result<(), ReadlineError> {
     let mut rl = DefaultEditor::new()?;
     let mut history = HistoryContainer::new();
-    
+    if let Ok(hist_file) =  env::var("HISTFILE"){
+        history.read_file(hist_file.as_str(), rl.history_mut())?;
+    }
+
     loop {
         let cmd_line = rl.readline("$ ")?;
 
@@ -45,7 +48,7 @@ fn main() -> Result<(), ReadlineError> {
         if let Ok(c) = cmd.parse::<ShellCommand>() {
             match c {
                 ShellCommand::Echo => println!("{}", args.join(" ")),
-                ShellCommand::Exit => return Ok(()),
+                ShellCommand::Exit => break ,
                 ShellCommand::Type => {
                     let arg = args.first().unwrap();
                     if arg.to_owned().parse::<ShellCommand>().is_ok() {
@@ -70,6 +73,10 @@ fn main() -> Result<(), ReadlineError> {
             } else {
                 println!("{cmd}: command not found")
             }
-        };
+        };        
     }
+    if let Ok(hist_file) =  env::var("HISTFILE"){
+        history.write_file(&hist_file)?;
+    }
+    Ok(())
 }
