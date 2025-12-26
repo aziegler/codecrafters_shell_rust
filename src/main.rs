@@ -10,6 +10,9 @@ fn main() {
         let mut buff = String::new();
         let _ = io::stdin().read_line(&mut buff);
         let command = buff.trim();
-        println!("{command}: command not found");
+        match command {
+            "exit" => return,
+            c => println!("{c}: command not found")
+        }
     }
 }
