@@ -36,6 +36,7 @@ fn main() -> Result<(),ReadlineError>{
             panic!("WTF!")
         };
         history.push(cmd_line.clone());
+        rl.add_history_entry(cmd_line.clone())?;
         if let Ok(c) = cmd.parse::<ShellCommand>(){
             match c {
                 ShellCommand::Echo => println!("{}",args.join(" ")),
