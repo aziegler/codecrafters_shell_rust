@@ -54,12 +54,14 @@ fn main() {
                     }
                 },
                 ShellCommand::History => {
-                    let mut beginning = 0;
+                    let length:usize;
                     if let Some(arg) = args.first().and_then(|a| a.parse::<usize>().ok()) {
-                        beginning = history.len() - arg;
-                    };
+                        length = arg;
+                    }else{
+                        length = history.len();
+                    }
                     
-                    history[beginning..].iter().enumerate().for_each(|(idx,command)| {
+                    history.iter().enumerate().rev().take(length).rev().for_each(|(idx,command)| {
                             let loc = idx + 1;
                             print!("    {loc} {command}");
                     });
