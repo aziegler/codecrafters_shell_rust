@@ -15,7 +15,8 @@ enum ShellCommand {
     Exit,
     Type,
     History,
-    PWD
+    PWD,
+    CD
 }
 
 impl ShellCommand{
@@ -25,7 +26,8 @@ impl ShellCommand{
             ShellCommand::Exit => "exit",
             ShellCommand::Type => "type",
             ShellCommand::History => "history",
-            ShellCommand::PWD=> "pwd"
+            ShellCommand::PWD=> "pwd",
+            ShellCommand::CD => "cd"
         }
     }
 
@@ -44,6 +46,7 @@ impl FromStr for ShellCommand {
             "type" => Ok(ShellCommand::Type),
             "history" => Ok(ShellCommand::History),
             "pwd" => Ok(ShellCommand::PWD),
+            "cd" => Ok(ShellCommand::CD),
             _ => Err("Not Found"),
         }
     }
@@ -92,6 +95,14 @@ fn main() -> Result<(), ReadlineError> {
                         panic!("Unknown path");
                     };
                     println!("{dir}");
+                }
+                ShellCommand::CD=>{
+                    let arg = args.first().unwrap();
+                    let change = env::set_current_dir(arg);
+                    match change{
+                        Ok(_) => (),
+                        Err(_) => println!("cd: {arg}: No such file or directory"),
+                    }
                 }
             }
         } else {
