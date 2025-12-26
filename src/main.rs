@@ -6,7 +6,7 @@ use std::{process::Command, str::FromStr};
 
 use crate::fs::PathCollection;
 
-enum ShellCommand{Echo,Exit,Type}
+enum ShellCommand{Echo,Exit,Type,History}
 
 impl FromStr for ShellCommand {
     type Err = &'static str;
@@ -16,6 +16,7 @@ impl FromStr for ShellCommand {
             "exit" => Ok(ShellCommand::Exit),
             "echo" => Ok(ShellCommand::Echo),
             "type" => Ok(ShellCommand::Type),
+            "history" => Ok(ShellCommand::History),
             _ => Err("Not Found"),
         }
     }
@@ -49,6 +50,9 @@ fn main() {
                             println!("{arg}: not found");
                         }
                     }
+                },
+                ShellCommand::History => {
+                    println!("")
                 },
             }
         }else{
