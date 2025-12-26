@@ -54,8 +54,7 @@ fn main() {
                     }
                 },
                 ShellCommand::History => {
-                    let mut local_histor = history.clone();
-                    local_histor.iter().enumerate().for_each(|(idx,command)| {
+                    history.iter().enumerate().for_each(|(idx,command)| {
                         let loc = idx + 1;
                         print!("    {loc} {command}");
                     });
