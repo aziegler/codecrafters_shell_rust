@@ -9,7 +9,12 @@ use rustyline::{DefaultEditor, error::ReadlineError};
 
 use crate::{fs::PathCollection, history::History};
 
-enum ShellCommand{Echo,Exit,Type,History}
+enum ShellCommand {
+    Echo,
+    Exit,
+    Type,
+    History,
+}
 
 impl FromStr for ShellCommand {
     type Err = &'static str;
@@ -25,48 +30,46 @@ impl FromStr for ShellCommand {
     }
 }
 
-fn main() -> Result<(),ReadlineError>{
+fn main() -> Result<(), ReadlineError> {
     let mut history = History::default();
     let mut rl = DefaultEditor::new()?;
     loop {
         let cmd_line = rl.readline("$ ")?;
-        
+
         let mut args = cmd_line.split_whitespace();
-        let (Some(cmd),args) = (args.next(),args.collect::<Vec<&str>>())else{
+        let (Some(cmd), args) = (args.next(), args.collect::<Vec<&str>>()) else {
             panic!("WTF!")
         };
         history.add(cmd_line.clone());
         rl.add_history_entry(cmd_line.clone())?;
-        if let Ok(c) = cmd.parse::<ShellCommand>(){
+        if let Ok(c) = cmd.parse::<ShellCommand>() {
             match c {
-                ShellCommand::Echo => println!("{}",args.join(" ")),
+                ShellCommand::Echo => println!("{}", args.join(" ")),
                 ShellCommand::Exit => return Ok(()),
                 ShellCommand::Type => {
                     let arg = args.first().unwrap();
-                    if arg.to_owned().parse::<ShellCommand>().is_ok(){
+                    if arg.to_owned().parse::<ShellCommand>().is_ok() {
                         println!("{arg} is a shell builtin");
-                    }else{
+                    } else {
                         let path = PathCollection::build().unwrap();
-                        if let Some(full_path)= path.find(arg.to_string()){
+                        if let Some(full_path) = path.find(arg.to_string()) {
                             println!("{arg} is {full_path}");
-                        }else{
+                        } else {
                             println!("{arg}: not found");
                         }
                     }
-                },
+                }
                 ShellCommand::History => {
-                   history.run(args)?;                    
-                },
+                    history.run(args)?;
+                }
             }
-        }else{
+        } else {
             let path = PathCollection::build().unwrap();
-            if path.find(cmd.to_string()).is_some(){
+            if path.find(cmd.to_string()).is_some() {
                 let _ = Command::new(cmd).args(args).spawn().expect("CMD").wait();
-             
-            }else{
+            } else {
                 println!("{cmd}: command not found")
             }
         };
-        
     }
 }
