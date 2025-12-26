@@ -54,8 +54,7 @@ fn main() {
         }else{
             let path = PathCollection::build().unwrap();
             if path.find(cmd.to_string()).is_some(){
-                let mut output = Command::new(cmd).arg(args.join(" ")).spawn().expect("False");
-                let _ = output.wait();
+                let _ = Command::new(cmd).args(args).spawn().expect("CMD").wait();
              
             }else{
                 println!("{cmd}: command not found")
