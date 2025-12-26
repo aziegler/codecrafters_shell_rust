@@ -2,6 +2,7 @@ pub mod fs;
 
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::fs::read_to_string;
 use std::{process::Command, str::FromStr};
 
 use rustyline::{DefaultEditor, error::ReadlineError};
@@ -55,12 +56,19 @@ fn main() -> Result<(),ReadlineError>{
                     }
                 },
                 ShellCommand::History => {
-                    let length:usize;
-                    if let Some(arg) = args.first().and_then(|a| a.parse::<usize>().ok()) {
-                        length = arg;
-                    }else{
-                        length = history.len();
-                    }                    
+                    let mut length:usize = history.len();
+                    if let Some(first_arg) = args.first(){
+                        if *first_arg == "-r"{
+                            let Some(file_name) = args.get(1) else {
+                                return Err(ReadlineError::Interrupted);
+                            };
+                            let contents = read_to_string(file_name)?;
+                            history = contents.lines().map(|s| s.to_owned()).collect();
+                            continue;
+                        }else if let Ok(arg) = first_arg.parse::<usize>() {
+                            length = arg;
+                        }       
+                    }
                     history.iter().enumerate().rev().take(length).rev().for_each(|(idx,command)| {
                             let loc = idx + 1;
                             println!("    {loc} {command}");

@@ -1,4 +1,4 @@
-use std::{env, os::unix::fs::PermissionsExt, path::{self, Path}, str::FromStr};
+use std::{env, os::unix::fs::PermissionsExt, path::{Path}, str::FromStr};
 
 pub struct PathCollection{
     paths : Vec<String>
