@@ -1,4 +1,4 @@
-use std::{env, os::unix::fs::PermissionsExt, path::Path, str::FromStr};
+use std::{env, fs::read_dir, os::unix::fs::PermissionsExt, path::{Path, PathBuf}, str::FromStr};
 
 pub struct PathCollection {
     paths: Vec<String>,
@@ -20,6 +20,47 @@ impl PathCollection {
             return Err("Path not set");
         };
         PathCollection::from_str(&path)
+    }
+
+    // fn recurse(path: impl AsRef<Path>) -> Vec<PathBuf> {
+    // let Ok(entries) = read_dir(path) else { return vec![] };
+    // entries.flatten().flat_map(|entry| {
+    //     let Ok(meta) = entry.metadata() else { return vec![] };
+    //     if meta.is_dir() { return recurse(entry.path()); }
+    //     if meta.is_file() { return vec![entry.path()]; }
+    //     vec![]
+    // }).collect()
+
+    pub fn list_files(path:&Path) -> Vec<String> {
+        if let Ok(entries) = read_dir(path) {
+                let res: Vec<String> = entries.filter_map(|entry| {
+                    if let Ok(file) = entry {
+                        if let Ok(data) = file.metadata(){
+                            if data.is_file() {
+                                Some(file.file_name().into_string().unwrap())
+                            }else{
+                                None
+                            }
+                        }else{
+                            None
+                        }
+                    }else{
+                        None
+                    }
+                }).collect();
+                res    
+            }else{
+                Vec::new()
+            }            
+    }
+
+    pub fn list(&self) -> Vec<String> {
+        let mut files = Vec::new();
+        for path in &self.paths {
+            let path = Path::new(&path);
+            files.extend(PathCollection::list_files(path));
+        }
+        files
     }
 
     pub fn find(&self, cmd: String) -> Option<String> {
