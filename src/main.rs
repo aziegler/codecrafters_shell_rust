@@ -23,6 +23,7 @@ impl FromStr for ShellCommand {
 }
 
 fn main() {
+    let mut history : Vec<String> = Vec::new();
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -34,6 +35,7 @@ fn main() {
         let (Some(cmd),args) = (args.next(),args.collect::<Vec<&str>>())else{
             panic!("WTF!")
         };
+        history.push(buff.clone());
         if let Ok(c) = cmd.parse::<ShellCommand>(){
             match c {
                 ShellCommand::Echo => println!("{}",args.join(" ")),
@@ -52,7 +54,11 @@ fn main() {
                     }
                 },
                 ShellCommand::History => {
-                    println!("")
+                    let mut local_histor = history.clone();
+                    local_histor.iter().enumerate().for_each(|(idx,command)| {
+                        let loc = idx + 1;
+                        print!("    {loc} {command}");
+                    });
                 },
             }
         }else{
