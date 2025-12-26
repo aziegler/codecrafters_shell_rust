@@ -54,10 +54,16 @@ fn main() {
                     }
                 },
                 ShellCommand::History => {
-                    history.iter().enumerate().for_each(|(idx,command)| {
-                        let loc = idx + 1;
-                        print!("    {loc} {command}");
+                    let mut beginning = 0;
+                    if let Some(arg) = args.first().and_then(|a| a.parse::<usize>().ok()) {
+                        beginning = history.len() - arg;
+                    };
+                    
+                    history[beginning..].iter().enumerate().for_each(|(idx,command)| {
+                            let loc = idx + 1;
+                            print!("    {loc} {command}");
                     });
+                    
                 },
             }
         }else{
