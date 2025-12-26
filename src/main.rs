@@ -15,6 +15,7 @@ enum ShellCommand {
     Exit,
     Type,
     History,
+    PWD
 }
 
 impl ShellCommand{
@@ -24,12 +25,13 @@ impl ShellCommand{
             ShellCommand::Exit => "exit",
             ShellCommand::Type => "type",
             ShellCommand::History => "history",
+            ShellCommand::PWD=> "pwd"
         }
     }
 
     
 
-    const COMMANDS:[Self;4] = [ShellCommand::Echo, ShellCommand::Exit,ShellCommand::Type,ShellCommand::History];
+    const COMMANDS:[Self;5] = [ShellCommand::Echo, ShellCommand::Exit,ShellCommand::Type,ShellCommand::History, ShellCommand::PWD];
 }
 
 impl FromStr for ShellCommand {
@@ -41,6 +43,7 @@ impl FromStr for ShellCommand {
             "echo" => Ok(ShellCommand::Echo),
             "type" => Ok(ShellCommand::Type),
             "history" => Ok(ShellCommand::History),
+            "pwd" => Ok(ShellCommand::PWD),
             _ => Err("Not Found"),
         }
     }
@@ -82,6 +85,13 @@ fn main() -> Result<(), ReadlineError> {
                 }
                 ShellCommand::History => {
                     history.run(args, rl.history_mut())?;
+                }
+                ShellCommand::PWD => {
+                    let dir = env::current_dir()?;
+                    let Some(dir) = dir.to_str() else{
+                        panic!("Unknown path");
+                    };
+                    println!("{dir}");
                 }
             }
         } else {
