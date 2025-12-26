@@ -23,7 +23,7 @@ impl Completer for AutoComplHelper{
             let mut compl: Vec<String> = Vec::new();
             for cand in possible_commands {
                 if cand.starts_with(&line[..pos]){
-                    compl.push(cand.to_string());
+                    compl.push(cand.to_string()+" ");
                 }
             }
             Ok((0, compl))

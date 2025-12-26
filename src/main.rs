@@ -17,6 +17,21 @@ enum ShellCommand {
     History,
 }
 
+impl ShellCommand{
+    fn to_str(&self) -> &str {
+        match self {
+            ShellCommand::Echo => "echo",
+            ShellCommand::Exit => "exit",
+            ShellCommand::Type => "type",
+            ShellCommand::History => "history",
+        }
+    }
+
+    
+
+    const COMMANDS:[Self;4] = [ShellCommand::Echo, ShellCommand::Exit,ShellCommand::Type,ShellCommand::History];
+}
+
 impl FromStr for ShellCommand {
     type Err = &'static str;
 
