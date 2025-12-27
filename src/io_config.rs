@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{fs::OpenOptions, io::Write};
 use std::fs::File;
 
 use regex::{Error, Regex};
@@ -12,7 +12,8 @@ pub(crate) fn setup_redirs(cmd_line: String) -> Result<(String, Box<dyn Write>, 
         let (Some(cmd),Some(file)) = ((cap.get(1)),(cap.get(2))) else{
             panic!("lalala");
         };
-        let stdout = Box::new(File::create(file.as_str()).expect("File creation failed"));
+        let file = OpenOptions::new().create(true).write(true).truncate(true).open(file.as_str().trim()).expect("Failed to create file");
+        let stdout = Box::new(file);
         let stderr = Box::new(std::io::stderr());
         Ok((cmd.as_str().to_string(), stdout, stderr))
     } else {
