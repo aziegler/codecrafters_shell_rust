@@ -3,38 +3,41 @@ use std::{
     io::Write,
 };
 
-use rustyline::{error::ReadlineError, history::{FileHistory, History}};
+use rustyline::{
+    error::ReadlineError,
+    history::{FileHistory, History},
+};
 
 pub struct HistoryContainer {
     content: Vec<String>,
-    mem_content: Vec<String>
+    mem_content: Vec<String>,
 }
 
-impl  HistoryContainer  {
+impl HistoryContainer {
     pub fn new() -> Self {
         HistoryContainer {
             content: Vec::new(),
-            mem_content: Vec::new(),           
+            mem_content: Vec::new(),
         }
     }
 
     pub fn add(&mut self, hist: &mut FileHistory, cmd: String) {
         self.content.push(cmd.clone());
         self.mem_content.push(cmd.clone());
-        hist.add(&cmd);
+        let _ = hist.add(&cmd);
     }
 
     pub fn read_file(&mut self, path: &str, hist: &mut FileHistory) -> Result<(), ReadlineError> {
         let contents = read_to_string(path)?;
         contents.lines().for_each(|l| {
             if !l.is_empty() {
-                self.add(hist,l.to_string());
+                self.add(hist, l.to_string());
             }
         });
         Ok(())
     }
 
-    fn append_to_file(&mut self, path: &str) -> Result<(),ReadlineError> {
+    fn append_to_file(&mut self, path: &str) -> Result<(), ReadlineError> {
         let mut file = OpenOptions::new().create(true).append(true).open(path)?;
         self.mem_content.iter().for_each(|l| {
             let _ = writeln!(file, "{}", l);
@@ -64,39 +67,34 @@ impl  HistoryContainer  {
             });
     }
 
-    pub fn run(&mut self, args: Vec<&str>,  hist: &mut FileHistory) -> Result<(), ReadlineError> {
-        let mut length: usize = self.content.len();
-        if let Some(first_arg) = args.first() {
-            match *first_arg {
-                "-r" => {
-                    let Some(file_name) = args.get(1) else {
-                        return Err(ReadlineError::Interrupted);
-                    };
-                    self.read_file(file_name, hist)?;
-                    return Ok(());
-                }
-                "-w" => {
-                    let Some(file_name) = args.get(1) else {
-                        return Err(ReadlineError::Interrupted);
-                    };
-                    self.write_file(file_name)?;
-                    return Ok(());
-                }
-                "-a" => {
-                    let Some(file_name) = args.get(1) else {
-                        return Err(ReadlineError::Interrupted);
-                    };
-                    self.append_to_file(file_name)?;
-                    return Ok(());
-                }
-                c => {
-                    if let Ok(arg) = c.parse::<usize>() {
-                        length = arg;
-                    }
+    pub fn run(
+        &mut self,
+        args: [Option<String>; 2],
+        hist: &mut FileHistory,
+    ) -> Result<(), ReadlineError> {
+        match args {
+            [None, None] => self.display(self.content.len()),
+            [None, Some(_)] => return Err(ReadlineError::Eof),
+            [Some(c), None] => {
+                if let Ok(arg) = c.parse::<usize>() {
+                    self.display(arg);
+                } else {
+                    return Err(ReadlineError::Eof);
                 }
             }
+            [Some(flag), Some(filename)] => match flag.as_str() {
+                "-r" => {
+                    self.read_file(&filename, hist)?;
+                }
+                "-w" => {
+                    self.write_file(&filename)?;
+                }
+                "-a" => {
+                    self.append_to_file(&filename)?;
+                }
+                _ => return Err(ReadlineError::Eof),
+            },
         }
-        self.display(length);
         Ok(())
     }
 }
@@ -106,4 +104,3 @@ impl Default for HistoryContainer {
         Self::new()
     }
 }
-

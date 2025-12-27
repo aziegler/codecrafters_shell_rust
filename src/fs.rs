@@ -1,4 +1,10 @@
-use std::{env, fs::read_dir, os::unix::fs::PermissionsExt, path::{Path, PathBuf}, str::FromStr};
+use std::{
+    env,
+    fs::read_dir,
+    os::unix::fs::PermissionsExt,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 pub struct PathCollection {
     paths: Vec<String>,
@@ -31,27 +37,29 @@ impl PathCollection {
     //     vec![]
     // }).collect()
 
-    pub fn list_files(path:&Path) -> Vec<String> {
+    pub fn list_files(path: &Path) -> Vec<String> {
         if let Ok(entries) = read_dir(path) {
-                let res: Vec<String> = entries.filter_map(|entry| {
+            let res: Vec<String> = entries
+                .filter_map(|entry| {
                     if let Ok(file) = entry {
-                        if let Ok(data) = file.metadata(){
+                        if let Ok(data) = file.metadata() {
                             if data.is_file() {
                                 Some(file.file_name().into_string().unwrap())
-                            }else{
+                            } else {
                                 None
                             }
-                        }else{
+                        } else {
                             None
                         }
-                    }else{
+                    } else {
                         None
                     }
-                }).collect();
-                res    
-            }else{
-                Vec::new()
-            }            
+                })
+                .collect();
+            res
+        } else {
+            Vec::new()
+        }
     }
 
     pub fn list(&self) -> Vec<String> {

@@ -1,128 +1,83 @@
+pub mod commands;
 pub mod fs;
-pub mod history;
 pub mod helper;
+pub mod history;
 
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{env, process::Command, str::FromStr};
+use std::{
+    env,
+    io::{stderr, stdout},
+    process::{Command, Output},
+};
 
 use rustyline::{Editor, config::Configurer, error::ReadlineError, history::FileHistory};
 
-use crate::{fs::PathCollection, helper::AutoComplHelper, history::HistoryContainer};
-
-enum ShellCommand {
-    Echo,
-    Exit,
-    Type,
-    History,
-    PWD,
-    CD
-}
-
-impl ShellCommand{
-    fn to_str(&self) -> &str {
-        match self {
-            ShellCommand::Echo => "echo",
-            ShellCommand::Exit => "exit",
-            ShellCommand::Type => "type",
-            ShellCommand::History => "history",
-            ShellCommand::PWD=> "pwd",
-            ShellCommand::CD => "cd"
-        }
-    }
-
-    
-
-    const COMMANDS:[Self;5] = [ShellCommand::Echo, ShellCommand::Exit,ShellCommand::Type,ShellCommand::History, ShellCommand::PWD];
-}
-
-impl FromStr for ShellCommand {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "exit" => Ok(ShellCommand::Exit),
-            "echo" => Ok(ShellCommand::Echo),
-            "type" => Ok(ShellCommand::Type),
-            "history" => Ok(ShellCommand::History),
-            "pwd" => Ok(ShellCommand::PWD),
-            "cd" => Ok(ShellCommand::CD),
-            _ => Err("Not Found"),
-        }
-    }
-}
+use crate::{
+    commands::ShellCommand, fs::PathCollection, helper::AutoComplHelper, history::HistoryContainer,
+};
 
 fn main() -> Result<(), ReadlineError> {
     let mut rl: Editor<AutoComplHelper, FileHistory> = Editor::new()?;
     rl.set_helper(AutoComplHelper::default());
     rl.set_completion_type(rustyline::CompletionType::List);
     let mut history = HistoryContainer::new();
-    if let Ok(hist_file) =  env::var("HISTFILE"){
+    if let Ok(hist_file) = env::var("HISTFILE") {
         history.read_file(hist_file.as_str(), rl.history_mut())?;
     }
 
     loop {
         let cmd_line = rl.readline("$ ")?;
-
+        history.add(rl.history_mut(), cmd_line.clone());
         let mut args = cmd_line.split_whitespace();
-        let (Some(cmd), args) = (args.next(), args.collect::<Vec<&str>>()) else {
+        let (Some(cmd), args) = (
+            args.next(),
+            args.map(|s| s.to_owned()).collect::<Vec<String>>(),
+        ) else {
             panic!("WTF!")
         };
-        history.add(rl.history_mut(), cmd_line.clone());
-        if let Ok(c) = cmd.parse::<ShellCommand>() {
-            match c {
-                ShellCommand::Echo => println!("{}", args.join(" ")),
-                ShellCommand::Exit => break ,
-                ShellCommand::Type => {
-                    let arg = args.first().unwrap();
-                    if arg.to_owned().parse::<ShellCommand>().is_ok() {
-                        println!("{arg} is a shell builtin");
-                    } else {
-                        let path = PathCollection::build().unwrap();
-                        if let Some(full_path) = path.find(arg.to_string()) {
-                            println!("{arg} is {full_path}");
-                        } else {
-                            println!("{arg}: not found");
-                        }
-                    }
-                }
-                ShellCommand::History => {
-                    history.run(args, rl.history_mut())?;
-                }
-                ShellCommand::PWD => {
-                    let dir = env::current_dir()?;
-                    let Some(dir) = dir.to_str() else{
-                        panic!("Unknown path");
-                    };
-                    println!("{dir}");
-                }
-                ShellCommand::CD=>{
-                    let arg = args.first().unwrap();
-                    if *arg =="~"{
-                        let Ok(home) = env::var("HOME")else {
-                            println!("HOME should be set");
-                            continue;
-                        };
-                        env::set_current_dir(home)?;
-                        continue;
-                    }
-                    let change = env::set_current_dir(arg);
-                    match change{
-                        Ok(_) => (),
-                        Err(_) => println!("cd: {arg}: No such file or directory"),
-                    }
-                }
+        let mut out_buf = String::new();
+        let mut err_buf = String::new();
+        if let Ok(c) = ShellCommand::parse(cmd, &args) {
+            // use String buffers which implement std::fmt::Write expected by commands
+
+            let should_cont = c.run(
+                &args,
+                &mut out_buf,
+                &mut err_buf,
+                rl.history_mut(),
+                &mut history,
+            )?;
+            // flush collected output to real stdout/stderr
+
+            if !should_cont {
+                break;
             }
         } else {
             let path = PathCollection::build().unwrap();
             if path.find(cmd.to_string()).is_some() {
-                let _ = Command::new(cmd).args(args).spawn().expect("CMD").wait();
+                let output = Command::new(cmd).args(args).output()?;
+                match (str::from_utf8(&output.stdout),str::from_utf8(&output.stdout)){
+                    (Ok(out), Ok(err)) => {
+                        out_buf = out.to_string();
+                        err_buf = err.to_string();
+                    },
+                    _ => return Err(ReadlineError::Eof)
+                }
             } else {
                 println!("{cmd}: command not found")
             }
-        };        
+        };
+        if !out_buf.is_empty() {
+            print!("{}", out_buf);
+            stdout().flush().ok();
+        }
+        if !err_buf.is_empty() {
+            eprint!("{}", err_buf);
+            stderr().flush().ok();
+        }
     }
-    if let Ok(hist_file) =  env::var("HISTFILE"){
+    if let Ok(hist_file) = env::var("HISTFILE") {
         history.write_file(&hist_file)?;
     }
     Ok(())
