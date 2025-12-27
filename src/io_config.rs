@@ -4,12 +4,12 @@ use std::fs::File;
 use regex::{Error, Regex};
 
 pub(crate) fn setup_redirs(cmd_line: String) -> Result<(String, Box<dyn Write>, Box<dyn Write>),Error> {
-    let regexp = Regex::new("(.*)>(.*)")?;
+    let regexp = Regex::new("(.*) (1>|>) (.*)")?;
     if regexp.is_match(&cmd_line) {
         let Some(cap) = regexp.captures(&cmd_line) else{
             return Err(regex::Error::Syntax("No match".to_string()));
         };
-        let (Some(cmd),Some(file)) = ((cap.get(1)),(cap.get(2))) else{
+        let (Some(cmd),Some(file)) = ((cap.get(1)),(cap.get(3))) else{
             panic!("lalala");
         };
         let file = OpenOptions::new().create(true).write(true).truncate(true).open(file.as_str().trim()).expect("Failed to create file");
