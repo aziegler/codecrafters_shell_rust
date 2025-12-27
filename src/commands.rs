@@ -78,7 +78,7 @@ impl ShellCommand {
     ) -> Result<bool, ReadlineError> {
         match self {
             ShellCommand::Echo { args } => {
-                writeln!(out, "{}", args.join(" "))?;
+                writeln!(out, "{}", args.join(" ").replace("'", ""))?;
                 Ok(true)
             }
             ShellCommand::Exit => Ok(false),
