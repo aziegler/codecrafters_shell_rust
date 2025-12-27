@@ -8,8 +8,7 @@ pub mod io_config;
 use std::io::{self, Write};
 use std::{
     env,
-    io::{stderr, stdout},
-    process::{Command, Output},
+    process::{Command},
 };
 
 use rustyline::{Editor, config::Configurer, error::ReadlineError, history::FileHistory};
@@ -31,7 +30,7 @@ fn main() -> Result<(), ReadlineError> {
         let cmd_line = rl.readline("$ ")?;
         history.add(rl.history_mut(), cmd_line.clone());
 
-        let Ok((cmd, mut out_buf, mut err_buf, is_redirected)) = io_config::setup_redirs(cmd_line) else{
+        let Ok((cmd, mut out_buf, mut err_buf)) = io_config::setup_redirs(cmd_line) else{
             panic!("Panic");
         };
 
@@ -57,33 +56,22 @@ fn main() -> Result<(), ReadlineError> {
         } else {
             let path = PathCollection::build().unwrap();
             if path.find(cmd.to_string()).is_some() {
-                if is_redirected {
-                    // When redirected, capture output and write to buffers
-                    let child = Command::new(cmd)
-                        .args(args)
-                        .stdout(std::process::Stdio::piped())
-                        .stderr(std::process::Stdio::piped())
-                        .spawn()
-                        .expect("Failed to start command");
-                    
-                    let output = child.wait_with_output()?;
-                    if !output.stdout.is_empty() {
-                        out_buf.write_all(&output.stdout)?;
-                    }
-                    if !output.stderr.is_empty() {
-                        err_buf.write_all(&output.stderr)?;
-                    }
-                } else {
-                    // When not redirected, let command write directly to terminal
-                    let mut child = Command::new(cmd)
-                        .args(args)
-                        .spawn()
-                        .expect("Failed to start command");
-                    
-                    child.wait()?;
+                let child = Command::new(cmd)
+                    .args(args)
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .spawn()
+                    .expect("Failed to start command");
+                
+                let output = child.wait_with_output()?;
+                if !output.stdout.is_empty() {
+                    out_buf.write_all(&output.stdout)?;
+                }
+                if !output.stderr.is_empty() {
+                    err_buf.write_all(&output.stderr)?;
                 }
             } else {
-                writeln!(err_buf, "{cmd}: command not found")?;
+                println!("{cmd}: command not found")
             }
         };
         
