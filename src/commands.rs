@@ -1,6 +1,5 @@
 use std::{
-    env::{self, Args},
-    str::FromStr,
+    env::{self, Args}, io::Write, str::FromStr
 };
 
 use rustyline::{error::ReadlineError, history::FileHistory};
@@ -69,11 +68,11 @@ impl ShellCommand {
         ShellCommand::CD { arg: String::new() },
     ];
 
-    pub fn run<O: std::fmt::Write, E: std::fmt::Write>(
+    pub fn run(
         &self,
         args: &Vec<String>,
-        out: &mut O,
-        err: &mut E,
+        out: &mut Box<dyn Write>,
+        err: &mut Box<dyn Write>,
         history: &mut FileHistory,
         history_container: &mut HistoryContainer,
     ) -> Result<bool, ReadlineError> {

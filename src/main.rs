@@ -2,6 +2,7 @@ pub mod commands;
 pub mod fs;
 pub mod helper;
 pub mod history;
+pub mod io_config;
 
 #[allow(unused_imports)]
 use std::io::{self, Write};
@@ -29,18 +30,19 @@ fn main() -> Result<(), ReadlineError> {
     loop {
         let cmd_line = rl.readline("$ ")?;
         history.add(rl.history_mut(), cmd_line.clone());
-        let mut args = cmd_line.split_whitespace();
+
+        let Ok((cmd, mut out_buf, mut err_buf, is_redirected)) = io_config::setup_redirs(cmd_line) else{
+            panic!("Panic");
+        };
+
+        let mut args = cmd.split_whitespace();
         let (Some(cmd), args) = (
             args.next(),
             args.map(|s| s.to_owned()).collect::<Vec<String>>(),
         ) else {
             panic!("WTF!")
         };
-        let mut out_buf = String::new();
-        let mut err_buf = String::new();
         if let Ok(c) = ShellCommand::parse(cmd, &args) {
-            // use String buffers which implement std::fmt::Write expected by commands
-
             let should_cont = c.run(
                 &args,
                 &mut out_buf,
@@ -48,7 +50,6 @@ fn main() -> Result<(), ReadlineError> {
                 rl.history_mut(),
                 &mut history,
             )?;
-            // flush collected output to real stdout/stderr
 
             if !should_cont {
                 break;
@@ -56,26 +57,39 @@ fn main() -> Result<(), ReadlineError> {
         } else {
             let path = PathCollection::build().unwrap();
             if path.find(cmd.to_string()).is_some() {
-                let output = Command::new(cmd).args(args).output()?;
-                match (str::from_utf8(&output.stdout),str::from_utf8(&output.stdout)){
-                    (Ok(out), Ok(err)) => {
-                        out_buf = out.to_string();
-                        err_buf = err.to_string();
-                    },
-                    _ => return Err(ReadlineError::Eof)
+                if is_redirected {
+                    // When redirected, capture output and write to buffers
+                    let child = Command::new(cmd)
+                        .args(args)
+                        .stdout(std::process::Stdio::piped())
+                        .stderr(std::process::Stdio::piped())
+                        .spawn()
+                        .expect("Failed to start command");
+                    
+                    let output = child.wait_with_output()?;
+                    if !output.stdout.is_empty() {
+                        out_buf.write_all(&output.stdout)?;
+                    }
+                    if !output.stderr.is_empty() {
+                        err_buf.write_all(&output.stderr)?;
+                    }
+                } else {
+                    // When not redirected, let command write directly to terminal
+                    let mut child = Command::new(cmd)
+                        .args(args)
+                        .spawn()
+                        .expect("Failed to start command");
+                    
+                    child.wait()?;
                 }
             } else {
-                println!("{cmd}: command not found")
+                writeln!(err_buf, "{cmd}: command not found")?;
             }
         };
-        if !out_buf.is_empty() {
-            print!("{}", out_buf);
-            stdout().flush().ok();
-        }
-        if !err_buf.is_empty() {
-            eprint!("{}", err_buf);
-            stderr().flush().ok();
-        }
+        
+        // Flush the output buffers
+        out_buf.flush().ok();
+        err_buf.flush().ok();
     }
     if let Ok(hist_file) = env::var("HISTFILE") {
         history.write_file(&hist_file)?;
