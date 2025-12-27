@@ -1,10 +1,4 @@
-use std::{
-    env,
-    fs::read_dir,
-    os::unix::fs::PermissionsExt,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{env, fs::read_dir, os::unix::fs::PermissionsExt, path::Path, str::FromStr};
 
 pub struct PathCollection {
     paths: Vec<String>,

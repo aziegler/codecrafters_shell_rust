@@ -6,10 +6,7 @@ pub mod io_config;
 
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{
-    env,
-    process::{Command},
-};
+use std::{env, process::Command};
 
 use rustyline::{Editor, config::Configurer, error::ReadlineError, history::FileHistory};
 
@@ -30,7 +27,7 @@ fn main() -> Result<(), ReadlineError> {
         let cmd_line = rl.readline("$ ")?;
         history.add(rl.history_mut(), cmd_line.clone());
 
-        let Ok((cmd, mut out_buf, mut err_buf)) = io_config::setup_redirs(cmd_line) else{
+        let Ok((cmd, mut out_buf, mut err_buf)) = io_config::setup_redirs(cmd_line) else {
             panic!("Panic");
         };
 
@@ -62,7 +59,7 @@ fn main() -> Result<(), ReadlineError> {
                     .stderr(std::process::Stdio::piped())
                     .spawn()
                     .expect("Failed to start command");
-                
+
                 let output = child.wait_with_output()?;
                 if !output.stdout.is_empty() {
                     out_buf.write_all(&output.stdout)?;
@@ -71,10 +68,10 @@ fn main() -> Result<(), ReadlineError> {
                     err_buf.write_all(&output.stderr)?;
                 }
             } else {
-                writeln!(err_buf,"{cmd}: command not found")?;
+                writeln!(err_buf, "{cmd}: command not found")?;
             }
         };
-        
+
         // Flush the output buffers
         out_buf.flush().ok();
         err_buf.flush().ok();

@@ -1,5 +1,6 @@
 use std::{
-    env::{self, Args}, io::Write, str::FromStr
+    env::{self},
+    io::Write,
 };
 
 use rustyline::{error::ReadlineError, history::FileHistory};
