@@ -71,7 +71,7 @@ fn main() -> Result<(), ReadlineError> {
                     err_buf.write_all(&output.stderr)?;
                 }
             } else {
-                println!("{cmd}: command not found")
+                writeln!(err_buf,"{cmd}: command not found")?;
             }
         };
         
